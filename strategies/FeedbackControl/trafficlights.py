@@ -15,7 +15,7 @@ import traci  # noqa
 
 
 MAX_STEPS = 5400
-SEED = 10001
+SEED = 10000
 NO_CARS = 1000
 UNIFORM = (SEED % 3) == 0
 MIN_TIME = 5
@@ -35,13 +35,14 @@ else:
 class TrafficAgent:
     """Defines individual traffic signal behaviour."""
 
-    def __init__(self, lane, gss, yss):
+    def __init__(self, lane, ogLane, gss, yss):
         self._strategySet = list(range(MIN_TIME, MAX_TIME)) # Action space defined as discrete time intervals; base idea can be tweaked. 
         self._strategyCount = len(self._strategySet)
 
         self._probabilitySet = [1 / self._strategyCount for i in range(self._strategyCount)]
         
         self._lane = lane
+        self._prevLane = ogLane
 
         self._greenSignalString = gss
         self._yellowSignalString = yss
@@ -50,15 +51,17 @@ class TrafficAgent:
         """Defines feedback mechanism. Probability space updated according to backlog in lane."""
         
         queueLength = traci.lane.getLastStepVehicleNumber(self._lane)
-        vehicleLength = traci.lane.getLastStepLength(self._lane)
+        # vehicleLength = traci.lane.getLastStepLength(self._lane)
 
-        queueLength = queueLength * vehicleLength
-        avgSpeed = traci.lane.getLastStepMeanSpeed(prevLane._lane) 
+        print("NO VEHICLES: ", queueLength)
+
+        queueLength = queueLength * 7
+        # avgSpeed = 5 # traci.lane.getLastStepMeanSpeed(self._prevLane) 
 
         print("QUEUE LENGTH : ", queueLength)
-        print("AVG SPEED : ", avgSpeed)
+        # print("AVG SPEED : ", avgSpeed)
 
-        rewardSet = [abs(queueLength - avgSpeed * self._strategySet[i]) for i in range(self._strategyCount)]
+        rewardSet = [abs(queueLength - self._strategySet[i]) for i in range(self._strategyCount)]
         print(rewardSet)
 
         reward = min(rewardSet)
@@ -76,12 +79,12 @@ class TrafficAgent:
     def getYellowSignalString(self):
         return self._yellowSignalString
 
-lane0 = TrafficAgent('E2T_0', 'rrrGGgrrrrrr', 'rrryyyrrrrrr')   # east to west
-lane1 = TrafficAgent('N2T_0', 'rrrrrrGGgrrr', 'rrrrrryyyrrr')   # north to south
-lane2 = TrafficAgent('W2T_0', 'rrrrrrrrrGGg', 'rrrrrrrrryyy')   # west to east
-lane3 = TrafficAgent('S2T_0', 'GGgrrrrrrrrr', 'yyyrrrrrrrrr')   # south to north
+lane0 = TrafficAgent('E2T_0', 'T2S_0', 'rrrGGgrrrrrr', 'rrryyyrrrrrr')   # east to west
+lane1 = TrafficAgent('N2T_0', 'T2E_0', 'rrrrrrGGgrrr', 'rrrrrryyyrrr')   # north to south
+lane2 = TrafficAgent('W2T_0', 'T2N_0', 'rrrrrrrrrGGg', 'rrrrrrrrryyy')   # west to east
+lane3 = TrafficAgent('S2T_0', 'T2W_0', 'GGgrrrrrrrrr', 'yyyrrrrrrrrr')   # south to north
 
-lanes = [lane0, lane1, lane2, lane3]
+lanes = [lane3, lane0, lane1, lane2]
 laneIndex = 0
 
 sumoBinary = checkBinary('sumo-gui')
